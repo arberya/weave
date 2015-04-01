@@ -7,12 +7,17 @@ machine:
   environment:
     GOPATH: /home/ubuntu:$GOPATH
     SRCDIR: /home/ubuntu/src/github.com/weaveworks/weave
+    PATH: $PATH:$HOME/.local/bin:$HOME/google-cloud-sdk/bin/
+    CLOUDSDK_CORE_DISABLE_PROMPTS: 1
 
 dependencies:
   post:
     - sudo apt-get install libpcap-dev
     - go clean -i net
     - go install -tags netgo std
+    - pip install --user --upgrade gcloud gsutil
+    - curl https://sdk.cloud.google.com | bash
+    - bin/setup-circleci-secrets "$SECRET_PASSWORD"
 
 test:
   pre:
@@ -20,3 +25,9 @@ test:
     - ln -s $(pwd) $SRCDIR
   override:
     - cd $SRCDIR; make all
+    - cd $SRCDIR; make tests
+    - cd $SRCDIR; ./test/gce/gce.sh setup
+    - cd $SRCDIR/test; SSH=ssh HOSTS=$(./gce/gce.sh hosts) ./setup.sh
+    - cd $SRCDIR/test; SSH=ssh HOSTS=$(./gce/gce.sh hosts) ./run_all.sh
+  post:
+    - cd $SRCDIR; ./test/gce/gce.sh destroy
