@@ -1,0 +1,22 @@
+general:
+
+
+machine:
+  services:
+    - docker
+  environment:
+    GOPATH: /home/ubuntu:$GOPATH
+    SRCDIR: /home/ubuntu/src/github.com/weaveworks/weave
+
+dependencies:
+  post:
+    - sudo apt-get install libpcap-dev
+    - go clean -i net
+    - go install -tags netgo std
+
+test:
+  pre:
+    - mkdir -p $(dirname $SRCDIR)
+    - ln -s $(pwd) $SRCDIR
+  override:
+    - cd $SRCDIR; make all
